@@ -3,6 +3,19 @@ import torch.nn as nn
 from torch.nn import Linear
 
 
+def train_critic(critic, data, optimizer):
+    optimizer.zero_grad()
+    observations = data["observations"]
+    discounted_rewards = data["discounted_rewards"]
+
+    values = critic(observations)
+    loss = ((values - discounted_rewards) ** 2).mean()
+
+    loss.backward()
+    optimizer.step()
+    return loss.item()
+
+
 class Critic(nn.Module):
     def __init__(self, observation_dim):
         super().__init__()
