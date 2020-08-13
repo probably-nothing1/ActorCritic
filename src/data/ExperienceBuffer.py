@@ -1,3 +1,5 @@
+import numpy as np
+
 from .Trajectory import Trajectory
 
 
@@ -13,6 +15,16 @@ class ExperienceBuffer:
 
         if done:
             self.finish_trajectory()
+
+    def get_data(self):
+        return {
+            "observations": np.concatenate([t.observations for t in self.trajectories]),
+            "values": np.concatenate([t.values for t in self.trajectories]),
+            "actions": np.concatenate([t.actions for t in self.trajectories]),
+            "rewards": np.concatenate([t.rewards for t in self.trajectories]),
+            "discounted_rewards": np.concatenate([t.discounted_rewards for t in self.trajectories]),
+            "advantages": np.concatenate([t.advantages for t in self.trajectories]),
+        }
 
     def finish_trajectory(self):
         self.trajectories[-1].finish()
