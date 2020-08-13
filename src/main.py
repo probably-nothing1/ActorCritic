@@ -1,41 +1,21 @@
+import gin
 import gym
 import torch
+import wandb
 from torch.optim import Adam
 
 from data.ExperienceBuffer import ExperienceBuffer
-from models.Actor import Actor
-from models.Critic import Critic
-from utils.pytorch_utils import dict_iter2tensor
+from models.Actor import Actor, train_actor
+from models.Critic import Critic, train_critic
+from utils.utils import create_environment, dict_iter2tensor, set_seed, setup_logger
 
 
-def train_actor(actor, data, optimizer):
-    optimizer.zero_grad()
-    observations = data["observations"]
-    actions = data["actions"]
-    discounted_rewards = data["discounted_rewards"]
-    _, policy = actor(observations)
-    log_probs = policy.log_prob(actions)
-    loss = -(log_probs * discounted_rewards).mean()
-
-    loss.backward()
-    optimizer.step()
-
-
-def train_critic(critic, data, optimizer):
-    optimizer.zero_grad()
-    observations = data["observations"]
-    discounted_rewards = data["discounted_rewards"]
-    values = critic(observations)
-    loss = ((values - discounted_rewards) ** 2).mean()
-    loss.backward()
-    optimizer.step()
-
-
-if __name__ == "__main__":
-    # create wandb
+def main():
+    setup_logger()
+    set_seed()
 
     # create env
-    env = gym.make("CartPole-v0")
+    env = create_environment()
     observation_dim = env.observation_space.shape[0]
     action_dim = env.action_space.n
 
@@ -67,13 +47,23 @@ if __name__ == "__main__":
 
                 experience_buffer.append(o, v, a, reward, done)
                 o = next_o
+
             print(f"Epoch {epoch}, episode {episode}, total reward {total_reward}")
+            wandb.log({"Total Reward": total_reward})
 
         #   2. train models
         data = experience_buffer.get_data()
         data = dict_iter2tensor(data)
-        train_actor(actor, data, actor_optimizer)
-        train_critic(critic, data, critic_optimizer)
+        actor_loss = train_actor(actor, data, actor_optimizer)
+        critic_loss = train_critic(critic, data, critic_optimizer)
         experience_buffer.clear()
 
         #   3. log data
+        wandb.log(
+            {"Actor Loss": actor_loss, "Critic Loss": critic_loss,}
+        )
+
+
+if __name__ == "__main__":
+    gin.parse_config_file("experiments/dev_config.gin")
+    main()
