@@ -16,6 +16,9 @@ class Trajectory:
 
     def append(self, observation, value, action, reward):
         assert not self.finished
+        if self.length == 0:
+            self.observations = np.zeros((1000, *observation.shape))
+
         self.observations[self.length] = observation
         self.values[self.length] = value
         self.actions[self.length] = action
