@@ -22,4 +22,4 @@ class Actor(nn.Module):
         logits = self.layer4(x)
         policy = Categorical(logits=logits)
         action = policy.sample()
-        return action
+        return action, policy
