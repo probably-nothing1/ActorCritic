@@ -1,5 +1,4 @@
 import gin
-import gym
 import torch
 import wandb
 from torch.optim import Adam
@@ -10,7 +9,8 @@ from models.Critic import Critic, train_critic
 from utils.utils import create_environment, dict_iter2tensor, set_seed, setup_logger
 
 
-def main():
+@gin.configurable()
+def main(gamma):
     setup_logger()
     set_seed()
 
@@ -24,9 +24,9 @@ def main():
     critic = Critic(observation_dim)
 
     # create exp buffer
-    experience_buffer = ExperienceBuffer(gamma=0.99)
+    experience_buffer = ExperienceBuffer(gamma)
 
-    # create optimizers and train functions
+    # create optimizers
     actor_optimizer = Adam(actor.parameters(), lr=3e-3, weight_decay=10e-4)
     critic_optimizer = Adam(critic.parameters(), lr=3e-3, weight_decay=10e-4)
 
@@ -54,14 +54,12 @@ def main():
         #   2. train models
         data = experience_buffer.get_data()
         data = dict_iter2tensor(data)
-        actor_loss = train_actor(actor, data, actor_optimizer)
+        actor_loss, entropy = train_actor(actor, data, actor_optimizer)
         critic_loss = train_critic(critic, data, critic_optimizer)
         experience_buffer.clear()
 
         #   3. log data
-        wandb.log(
-            {"Actor Loss": actor_loss, "Critic Loss": critic_loss,}
-        )
+        wandb.log({"Actor Loss": actor_loss, "Critic Loss": critic_loss, "Entropy": entropy})
 
 
 if __name__ == "__main__":

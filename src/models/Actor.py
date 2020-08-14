@@ -14,9 +14,11 @@ def train_actor(actor, data, optimizer):
     log_probs = policy.log_prob(actions)
     loss = -(log_probs * discounted_rewards).mean()
 
+    entropy = policy.entropy().mean()
+
     loss.backward()
     optimizer.step()
-    return loss.item()
+    return loss.item(), entropy.item()
 
 
 class Actor(nn.Module):
