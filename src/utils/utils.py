@@ -1,3 +1,5 @@
+from itertools import chain, zip_longest
+
 import gin
 import gym
 import numpy as np
@@ -5,6 +7,7 @@ import torch
 import torch.nn as nn
 import wandb
 from gym import wrappers
+from torch.nn import Linear, Tanh
 
 
 @gin.configurable
@@ -27,11 +30,10 @@ def set_seed(seed=1337):
     np.random.seed(seed)
 
 
-def mlp(sizes, activation, output_activation=nn.Identity):
-    layers = []
-    for j in range(len(sizes) - 1):
-        act = activation if j < len(sizes) - 2 else output_activation
-        layers += [nn.Linear(sizes[j], sizes[j + 1]), act()]
+def create_fully_connected_network(sizes):
+    fc_layers = [Linear(in_size, out_size) for in_size, out_size in zip(sizes[:-1], sizes[1:])]
+    activations = [Tanh() for _ in range(len(fc_layers) - 1)]
+    layers = [x for x in chain(*zip_longest(fc_layers, activations)) if x is not None]
     return nn.Sequential(*layers)
 
 

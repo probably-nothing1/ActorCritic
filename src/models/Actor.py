@@ -1,7 +1,8 @@
-import torch
+import gin
 import torch.nn as nn
 from torch.distributions.categorical import Categorical
-from torch.nn import Linear
+
+from utils.utils import create_fully_connected_network
 
 
 def train_actor(actor, data, optimizer):
@@ -21,22 +22,15 @@ def train_actor(actor, data, optimizer):
     return loss.item(), entropy.item()
 
 
+@gin.configurable
 class Actor(nn.Module):
-    def __init__(self, observation_dim, action_dim):
+    def __init__(self, observation_dim, action_dim, hidden_sizes):
         super().__init__()
-        self.layer1 = Linear(observation_dim, 32)
-        self.layer2 = Linear(32, 32)
-        self.layer3 = Linear(32, 32)
-        self.layer4 = Linear(32, action_dim)
+        sizes = [observation_dim, *hidden_sizes, action_dim]
+        self.fc_net = create_fully_connected_network(sizes)
 
     def forward(self, observation):
-        x = self.layer1(observation)
-        x = torch.tanh(x)
-        x = self.layer2(x)
-        x = torch.tanh(x)
-        x = self.layer3(x)
-        x = torch.tanh(x)
-        logits = self.layer4(x)
+        logits = self.fc_net(observation)
         policy = Categorical(logits=logits)
         action = policy.sample()
         return action, policy

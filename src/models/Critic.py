@@ -1,6 +1,7 @@
-import torch
+import gin
 import torch.nn as nn
-from torch.nn import Linear
+
+from utils.utils import create_fully_connected_network
 
 
 def train_critic(critic, data, optimizer):
@@ -17,20 +18,13 @@ def train_critic(critic, data, optimizer):
     return loss.item()
 
 
+@gin.configurable
 class Critic(nn.Module):
-    def __init__(self, observation_dim):
+    def __init__(self, observation_dim, hidden_sizes):
         super().__init__()
-        self.layer1 = Linear(observation_dim, 32)
-        self.layer2 = Linear(32, 32)
-        self.layer3 = Linear(32, 32)
-        self.layer4 = Linear(32, 1)
+        sizes = [observation_dim, *hidden_sizes, 1]
+        self.fc_net = create_fully_connected_network(sizes)
 
     def forward(self, observation):
-        x = self.layer1(observation)
-        x = torch.tanh(x)
-        x = self.layer2(x)
-        x = torch.tanh(x)
-        x = self.layer3(x)
-        x = torch.tanh(x)
-        value = self.layer4(x)
-        return value
+        logits = self.fc_net(observation)
+        return logits
