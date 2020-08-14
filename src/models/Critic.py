@@ -8,11 +8,12 @@ def train_critic(critic, data, optimizer):
     observations = data["observations"]
     discounted_rewards = data["discounted_rewards"]
 
-    values = critic(observations)
-    loss = ((values - discounted_rewards) ** 2).mean()
+    for _ in range(100):
+        values = critic(observations)
+        loss = ((values - discounted_rewards) ** 2).mean()
+        loss.backward()
+        optimizer.step()
 
-    loss.backward()
-    optimizer.step()
     return loss.item()
 
 
