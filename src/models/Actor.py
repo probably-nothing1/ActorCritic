@@ -1,4 +1,5 @@
 import gin
+import torch
 import torch.nn as nn
 from torch.distributions.categorical import Categorical
 
@@ -10,10 +11,11 @@ def train_actor(actor, data, optimizer):
     observations = data["observations"]
     actions = data["actions"]
     discounted_rewards = data["discounted_rewards"]
+    values = data["values"]
 
     _, policy = actor(observations)
     log_probs = policy.log_prob(actions)
-    loss = -(log_probs * discounted_rewards).mean()
+    loss = -(log_probs * (discounted_rewards - values)).mean()
 
     entropy = policy.entropy().mean()
 
@@ -34,3 +36,8 @@ class Actor(nn.Module):
         policy = Categorical(logits=logits)
         action = policy.sample()
         return action, policy
+
+    def get_best_action(self, observation):
+        with torch.no_grad():
+            logits = self.fc_net(observation)
+            return torch.argmax(logits)

@@ -19,7 +19,7 @@ def collect_trajectories(actor, critic, env, experience_buffer, min_num_of_steps
         while not done:
             o = torch.as_tensor(o, dtype=torch.float32)
             with torch.no_grad():
-                a, _, _ = actor(o)
+                a, _ = actor(o)
                 v = critic(o)
 
             a, v = a.item(), v.item()
@@ -34,6 +34,24 @@ def collect_trajectories(actor, critic, env, experience_buffer, min_num_of_steps
         wandb.log({"Total Reward": total_reward})
 
     print(f"steps collected {steps_collected}")
+
+
+@gin.configurable
+def evaluate(actor, env):
+    o = env.reset()
+    total_reward = 0
+    done = False
+    while not done:
+        o = torch.as_tensor(o, dtype=torch.float32)
+
+        best_action = actor.get_best_action(o)
+        next_o, reward, done, info = env.step(best_action.item())
+
+        total_reward += reward
+        o = next_o
+
+    print(f"Test Total Reward {total_reward}")
+    wandb.log({"Test Total Reward": total_reward})
 
 
 @gin.configurable
@@ -65,6 +83,8 @@ def main(gamma, actor_lr, critic_lr, weight_decay, epochs):
         actor_loss, entropy = train_actor(actor, data, actor_optimizer)
         critic_loss = train_critic(critic, data, critic_optimizer)
         experience_buffer.clear()
+
+        evaluate(actor, env)
 
         #   3. log data
         # wandb.log({"Actor Loss": actor_loss, "Critic Loss": 0, "Entropy": entropy})
