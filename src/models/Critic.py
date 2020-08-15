@@ -4,12 +4,13 @@ import torch.nn as nn
 from utils.utils import create_fully_connected_network
 
 
-def train_critic(critic, data, optimizer):
+@gin.configurable
+def train_critic(critic, data, optimizer, num_train_loop_iterations=80):
     optimizer.zero_grad()
     observations = data["observations"]
     discounted_rewards = data["discounted_rewards"]
 
-    for _ in range(100):
+    for _ in range(num_train_loop_iterations):
         values = critic(observations)
         loss = ((values - discounted_rewards) ** 2).mean()
         loss.backward()

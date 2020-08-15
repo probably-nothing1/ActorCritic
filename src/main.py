@@ -9,8 +9,35 @@ from models.Critic import Critic, train_critic
 from utils.utils import create_environment, dict_iter2tensor, set_seed, setup_logger
 
 
-@gin.configurable()
-def main(gamma):
+@gin.configurable
+def collect_trajectories(actor, critic, env, experience_buffer, min_num_of_steps_in_epoch):
+    steps_collected = 0
+    while steps_collected < min_num_of_steps_in_epoch:
+        o = env.reset()
+        total_reward = 0
+        done = False
+        while not done:
+            o = torch.as_tensor(o, dtype=torch.float32)
+            with torch.no_grad():
+                a, _, _ = actor(o)
+                v = critic(o)
+
+            a, v = a.item(), v.item()
+            next_o, reward, done, info = env.step(a)
+            total_reward += reward
+
+            experience_buffer.append(o, v, a, reward, done)
+            o = next_o
+            steps_collected += 1
+
+        print(f"Total Reward {total_reward}")
+        wandb.log({"Total Reward": total_reward})
+
+    print(f"steps collected {steps_collected}")
+
+
+@gin.configurable
+def main(gamma, actor_lr, critic_lr, weight_decay, epochs):
     setup_logger()
     set_seed()
 
@@ -27,31 +54,12 @@ def main(gamma):
     experience_buffer = ExperienceBuffer(gamma)
 
     # create optimizers
-    actor_optimizer = Adam(actor.parameters(), lr=3e-3, weight_decay=10e-4)
-    critic_optimizer = Adam(critic.parameters(), lr=3e-3, weight_decay=10e-4)
+    actor_optimizer = Adam(actor.parameters(), lr=actor_lr, weight_decay=weight_decay)
+    critic_optimizer = Adam(critic.parameters(), lr=critic_lr, weight_decay=weight_decay)
 
-    for epoch in range(100):
-        #   1. simulate data
-        for episode in range(20):
-            total_reward = 0
-            o = env.reset()
-            done = False
-            while not done:
-                o = torch.as_tensor(o, dtype=torch.float32)
-                with torch.no_grad():
-                    a, _ = actor(o)
-                    v = critic(o)
-                a, v = a.item(), v.item()
-                next_o, reward, done, info = env.step(a)
-                total_reward += reward
+    for epoch in range(epochs):
+        collect_trajectories(actor, critic, env, experience_buffer)
 
-                experience_buffer.append(o, v, a, reward, done)
-                o = next_o
-
-            print(f"Epoch {epoch}, episode {episode}, total reward {total_reward}")
-            wandb.log({"Total Reward": total_reward})
-
-        #   2. train models
         data = experience_buffer.get_data()
         data = dict_iter2tensor(data)
         actor_loss, entropy = train_actor(actor, data, actor_optimizer)
@@ -59,6 +67,7 @@ def main(gamma):
         experience_buffer.clear()
 
         #   3. log data
+        # wandb.log({"Actor Loss": actor_loss, "Critic Loss": 0, "Entropy": entropy})
         wandb.log({"Actor Loss": actor_loss, "Critic Loss": critic_loss, "Entropy": entropy})
 
 
