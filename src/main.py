@@ -50,8 +50,7 @@ def evaluate(actor, env):
         total_reward += reward
         o = next_o
 
-    print(f"Test Total Reward {total_reward}")
-    wandb.log({"Test Total Reward": total_reward})
+    return total_reward
 
 
 @gin.configurable
@@ -84,11 +83,16 @@ def main(gamma, actor_lr, critic_lr, weight_decay, epochs):
         critic_loss = train_critic(critic, data, critic_optimizer)
         experience_buffer.clear()
 
-        evaluate(actor, env)
+        test_total_reward = evaluate(actor, env)
 
-        #   3. log data
-        # wandb.log({"Actor Loss": actor_loss, "Critic Loss": 0, "Entropy": entropy})
-        wandb.log({"Actor Loss": actor_loss, "Critic Loss": critic_loss, "Entropy": entropy})
+        wandb.log(
+            {
+                "Actor Loss": actor_loss,
+                "Critic Loss": critic_loss,
+                "Entropy": entropy,
+                "Test Total Reward": test_total_reward,
+            }
+        )
 
 
 if __name__ == "__main__":
