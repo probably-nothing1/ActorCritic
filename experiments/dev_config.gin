@@ -11,7 +11,7 @@ main.weight_decay = 10e-4
 train_critic.num_train_loop_iterations = 80
 # collect_trajectories.num_of_episodes = 20
 collect_trajectories.min_num_of_steps_in_epoch = 1000
-
+_compute_GAE_advantage.GAE_lambda = 0.99
 
 # -----------------------------------------------------------------------------
 # ----------------------------        MODELS         --------------------------

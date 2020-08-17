@@ -1,3 +1,4 @@
+import gin
 import numpy as np
 from scipy.signal import lfilter
 
@@ -12,6 +13,7 @@ class Trajectory:
         self.rewards = np.zeros(1000)
         self.discounted_rewards = np.zeros(1000)
         self.advantages = np.zeros(1000)
+        self.advantages_GAE = np.zeros(1000)
         self.finished = False
 
     def append(self, observation, value, action, reward):
@@ -23,7 +25,7 @@ class Trajectory:
         self.values[self.length] = value
         self.actions[self.length] = action
         self.rewards[self.length] = reward
-        self.length = self.length + 1
+        self.length += 1
 
     def finish(self):
         self.finished = True
@@ -32,15 +34,19 @@ class Trajectory:
         self.actions = self.actions[: self.length]
         self.rewards = self.rewards[: self.length]
         self._compute_discounted_rewards()
-        self._compute_advantage()
+        self._compute_GAE_advantage()
 
     def _compute_discounted_rewards(self):
         rewards_backward = self.rewards[::-1]
         discounted_returns_backwards = lfilter([1], [1, -self.gamma], rewards_backward, axis=0)
         self.discounted_rewards = discounted_returns_backwards[::-1]
 
-    def _compute_advantage(self):
-        return [0] * len(self.values)
+    @gin.configurable
+    def _compute_GAE_advantage(self, GAE_lambda):
+        deltas = self.rewards + self.gamma * np.append(self.values[1:], 0) - self.values
+        deltas_backward = deltas[::-1]
+        advantage_GAE_backwards = lfilter([1], [1, -self.gamma * GAE_lambda], deltas_backward)
+        self.advantages_GAE = advantage_GAE_backwards[::-1]
 
     def __len__(self):
         return self.length

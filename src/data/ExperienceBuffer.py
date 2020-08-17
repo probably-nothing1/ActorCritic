@@ -24,6 +24,7 @@ class ExperienceBuffer:
             "rewards": np.concatenate([t.rewards for t in self.trajectories]),
             "discounted_rewards": np.concatenate([t.discounted_rewards for t in self.trajectories]),
             "advantages": np.concatenate([t.advantages for t in self.trajectories]),
+            "advantages_GAE": np.concatenate([t.advantages_GAE for t in self.trajectories]),
         }
 
     def finish_trajectory(self):

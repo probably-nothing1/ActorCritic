@@ -6,16 +6,22 @@ from torch.distributions.categorical import Categorical
 from utils.utils import create_fully_connected_network
 
 
+def get_theta(data, function):
+    if function == "advantage_GAE":
+        return data["advantages_GAE"]
+    elif function == "discounted_rewards":
+        return data["discounted_rewards"]
+
+
 def train_actor(actor, data, optimizer):
     optimizer.zero_grad()
     observations = data["observations"]
     actions = data["actions"]
-    discounted_rewards = data["discounted_rewards"]
-    values = data["values"]
 
     _, policy = actor(observations)
     log_probs = policy.log_prob(actions)
-    loss = -(log_probs * (discounted_rewards - values)).mean()
+    theta = get_theta(data, "advantage_GAE")
+    loss = -(log_probs * theta).mean()
 
     entropy = policy.entropy().mean()
 
