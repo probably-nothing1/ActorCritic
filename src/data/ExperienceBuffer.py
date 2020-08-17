@@ -4,13 +4,12 @@ from .Trajectory import Trajectory
 
 
 class ExperienceBuffer:
-    def __init__(self, gamma):
+    def __init__(self):
         self.trajectories = []
-        self.gamma = gamma
 
     def append(self, observation, value, action, reward, done=False):
         if not self.trajectories or self.trajectories[-1].finished:
-            self.trajectories.append(Trajectory(gamma=self.gamma))
+            self.trajectories.append(Trajectory())
         self.trajectories[-1].append(observation, value, action, reward)
 
         if done:
@@ -23,8 +22,7 @@ class ExperienceBuffer:
             "actions": np.concatenate([t.actions for t in self.trajectories]),
             "rewards": np.concatenate([t.rewards for t in self.trajectories]),
             "discounted_rewards": np.concatenate([t.discounted_rewards for t in self.trajectories]),
-            "advantages": np.concatenate([t.advantages for t in self.trajectories]),
-            "advantages_GAE": np.concatenate([t.advantages_GAE for t in self.trajectories]),
+            "theta": np.concatenate([t.theta for t in self.trajectories]),
         }
 
     def finish_trajectory(self):

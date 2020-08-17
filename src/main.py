@@ -59,7 +59,7 @@ def evaluate(actor, env, runs=20):
 
 
 @gin.configurable
-def main(gamma, actor_lr, critic_lr, weight_decay, epochs):
+def main(actor_lr, critic_lr, weight_decay, epochs):
     setup_logger()
     set_seed()
 
@@ -73,7 +73,7 @@ def main(gamma, actor_lr, critic_lr, weight_decay, epochs):
     critic = Critic(observation_dim)
 
     # create exp buffer
-    experience_buffer = ExperienceBuffer(gamma)
+    experience_buffer = ExperienceBuffer()
 
     # create optimizers
     actor_optimizer = Adam(actor.parameters(), lr=actor_lr, weight_decay=weight_decay)

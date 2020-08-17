@@ -1,17 +1,22 @@
 # -----------------------------------------------------------------------------
-# ----------------------------         TRAINING          --------------------------
+# ----------------------------         TRAINING          ----------------------
 # -----------------------------------------------------------------------------
-# main.steps_per_epoch = 100
 main.epochs = 100
 main.actor_lr = 3e-4
 main.critic_lr = 1e-3
-# main.lam = 0.97
-main.gamma = 0.99
 main.weight_decay = 10e-4
 train_critic.num_train_loop_iterations = 80
-# collect_trajectories.num_of_episodes = 20
+
+
+# -----------------------------------------------------------------------------
+# ----------------------------   TRAJECTORY COLLECTION   ----------------------
+# -----------------------------------------------------------------------------
 collect_trajectories.min_num_of_steps_in_epoch = 1000
-_compute_GAE_advantage.GAE_lambda = 0.99
+Trajectory.gamma = 0.99
+# choice: advantage_GAE, total_reward, reward_following, td_residual
+Trajectory.theta_function = @reward_following
+advantage_GAE.GAE_lambda = 0.97
+
 
 # -----------------------------------------------------------------------------
 # ----------------------------        MODELS         --------------------------
