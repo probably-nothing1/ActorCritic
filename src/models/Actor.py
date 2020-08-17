@@ -21,7 +21,7 @@ def train_actor(actor, data, optimizer):
     _, policy = actor(observations)
     log_probs = policy.log_prob(actions)
     theta = get_theta(data, "advantage_GAE")
-    loss = -(log_probs * theta).mean()
+    loss = -(theta * log_probs).mean()
 
     entropy = policy.entropy().mean()
 

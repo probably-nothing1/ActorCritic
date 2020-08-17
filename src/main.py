@@ -1,4 +1,5 @@
 import gin
+import numpy as np
 import torch
 import wandb
 from torch.optim import Adam
@@ -37,20 +38,24 @@ def collect_trajectories(actor, critic, env, experience_buffer, min_num_of_steps
 
 
 @gin.configurable
-def evaluate(actor, env):
-    o = env.reset()
-    total_reward = 0
-    done = False
-    while not done:
-        o = torch.as_tensor(o, dtype=torch.float32)
+def evaluate(actor, env, runs=20):
+    total_rewards = np.zeros(runs)
+    for i in range(runs):
+        total_reward = 0
+        o = env.reset()
+        done = False
+        while not done:
+            o = torch.as_tensor(o, dtype=torch.float32)
 
-        best_action = actor.get_best_action(o)
-        next_o, reward, done, info = env.step(best_action.item())
+            best_action = actor.get_best_action(o)
+            next_o, reward, done, info = env.step(best_action.item())
 
-        total_reward += reward
-        o = next_o
+            total_reward += reward
+            o = next_o
 
-    return total_reward
+        total_rewards[i] = total_reward
+
+    return total_rewards.mean(), total_rewards.max(), total_rewards.min()
 
 
 @gin.configurable
@@ -83,14 +88,16 @@ def main(gamma, actor_lr, critic_lr, weight_decay, epochs):
         critic_loss = train_critic(critic, data, critic_optimizer)
         experience_buffer.clear()
 
-        test_total_reward = evaluate(actor, env)
+        test_mean_reward, test_max_reward, test_min_reward = evaluate(actor, env)
 
         wandb.log(
             {
                 "Actor Loss": actor_loss,
                 "Critic Loss": critic_loss,
                 "Entropy": entropy,
-                "Test Total Reward": test_total_reward,
+                "Test Mean Reward": test_mean_reward,
+                "Test Max Reward": test_max_reward,
+                "Test Min Reward": test_min_reward,
             }
         )
 
