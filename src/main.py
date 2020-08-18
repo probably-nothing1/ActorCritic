@@ -5,7 +5,7 @@ import wandb
 from torch.optim import Adam
 
 from data.ExperienceBuffer import ExperienceBuffer
-from models.Actor import Actor, train_actor
+from models.Actor import create_actor, train_actor
 from models.Critic import Critic, train_critic
 from utils.utils import create_environment, dict_iter2tensor, set_seed, setup_logger
 
@@ -23,7 +23,7 @@ def collect_trajectories(actor, critic, env, experience_buffer, min_num_of_steps
                 a, _ = actor(o)
                 v = critic(o)
 
-            a, v = a.item(), v.item()
+            a, v = a.numpy(), v.item()
             next_o, reward, done, info = env.step(a)
             total_reward += reward
 
@@ -48,7 +48,7 @@ def evaluate(actor, env, runs=20):
             o = torch.as_tensor(o, dtype=torch.float32)
 
             best_action = actor.get_best_action(o)
-            next_o, reward, done, info = env.step(best_action.item())
+            next_o, reward, done, info = env.step(best_action.numpy())
 
             total_reward += reward
             o = next_o
@@ -66,10 +66,9 @@ def main(actor_lr, critic_lr, weight_decay, epochs):
     # create env
     env = create_environment()
     observation_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.n
 
     # create models
-    actor = Actor(observation_dim, action_dim)
+    actor = create_actor(env.observation_space, env.action_space)
     critic = Critic(observation_dim)
 
     # create exp buffer

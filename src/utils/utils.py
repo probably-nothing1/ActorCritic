@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import wandb
 from gym import wrappers
-from torch.nn import Linear, Tanh
+from torch.nn import Identity, Linear, Tanh
 
 
 @gin.configurable
@@ -30,9 +30,9 @@ def set_seed(seed=1337):
     np.random.seed(seed)
 
 
-def create_fully_connected_network(sizes):
+def create_fully_connected_network(sizes, output_activation_fn=Identity):
     fc_layers = [Linear(in_size, out_size) for in_size, out_size in zip(sizes[:-1], sizes[1:])]
-    activations = [Tanh() for _ in range(len(fc_layers) - 1)]
+    activations = [Tanh() for _ in range(len(fc_layers) - 1)] + [output_activation_fn()]
     layers = [x for x in chain(*zip_longest(fc_layers, activations)) if x is not None]
     return nn.Sequential(*layers)
 

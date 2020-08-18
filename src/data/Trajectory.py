@@ -49,6 +49,7 @@ class Trajectory:
         assert not self.finished
         if self.length == 0:
             self.observations = np.zeros((1000, *observation.shape))
+            self.actions = np.zeros((1000, *action.shape))
 
         self.observations[self.length] = observation
         self.values[self.length] = value
@@ -64,6 +65,8 @@ class Trajectory:
         self.rewards = self.rewards[: self.length]
         self._compute_discounted_rewards()
         self.theta = self.theta_function(self)
+        if len(self.actions.shape) != 1:
+            self.theta = np.expand_dims(self.theta, axis=-1)
 
     def _compute_discounted_rewards(self):
         rewards_backward = self.rewards[::-1]
