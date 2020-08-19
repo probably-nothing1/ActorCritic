@@ -1,10 +1,10 @@
 import gin
-import numpy as np
 import torch
 import wandb
 from torch.optim import Adam
 
 from data.ExperienceBuffer import ExperienceBuffer
+from evaluation import evaluate, record_evaluation_video
 from models.Actor import create_actor, train_actor
 from models.Critic import Critic, train_critic
 from utils.utils import create_environment, dict_iter2tensor, set_seed, setup_logger
@@ -38,28 +38,7 @@ def collect_trajectories(actor, critic, env, experience_buffer, min_num_of_steps
 
 
 @gin.configurable
-def evaluate(actor, env, runs=20):
-    total_rewards = np.zeros(runs)
-    for i in range(runs):
-        total_reward = 0
-        o = env.reset()
-        done = False
-        while not done:
-            o = torch.as_tensor(o, dtype=torch.float32)
-
-            best_action = actor.get_best_action(o)
-            next_o, reward, done, info = env.step(best_action.numpy())
-
-            total_reward += reward
-            o = next_o
-
-        total_rewards[i] = total_reward
-
-    return total_rewards.mean(), total_rewards.max(), total_rewards.min()
-
-
-@gin.configurable
-def main(actor_lr, critic_lr, weight_decay, epochs):
+def main(actor_lr, critic_lr, weight_decay, epochs, record_eval_video_rate):
     setup_logger()
     set_seed()
 
@@ -88,6 +67,9 @@ def main(actor_lr, critic_lr, weight_decay, epochs):
         experience_buffer.clear()
 
         test_mean_reward, test_max_reward, test_min_reward = evaluate(actor, env)
+
+        if epoch % record_eval_video_rate == 0:
+            record_evaluation_video(actor, env)
 
         wandb.log(
             {

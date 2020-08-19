@@ -1,21 +1,27 @@
 # -----------------------------------------------------------------------------
 # ----------------------------         TRAINING          ----------------------
 # -----------------------------------------------------------------------------
-main.epochs = 200
+main.epochs = 100
 main.actor_lr = 3e-4
 main.critic_lr = 1e-3
 main.weight_decay = 10e-4
 train_critic.num_train_loop_iterations = 80
 
-
 # -----------------------------------------------------------------------------
 # ----------------------------   TRAJECTORY COLLECTION   ----------------------
 # -----------------------------------------------------------------------------
-collect_trajectories.min_num_of_steps_in_epoch = 6000
+collect_trajectories.min_num_of_steps_in_epoch = 1000
 Trajectory.gamma = 0.99
 # choice: advantage_GAE, total_reward, reward_following, td_residual
 Trajectory.theta_function = @advantage_GAE
 advantage_GAE.GAE_lambda = 0.97
+
+
+# -----------------------------------------------------------------------------
+# ---------------------------------   EVALUATE   ------------------------------
+# -----------------------------------------------------------------------------
+main.record_eval_video_rate = 5
+evaluate.runs = 20
 
 
 # -----------------------------------------------------------------------------
@@ -29,9 +35,9 @@ create_actor.hidden_sizes = (128, 128, 128)
 # ------------------------------    ENVIRONMENT    ----------------------------
 # -----------------------------------------------------------------------------
 # choice: 'CartPole-v0', 'HalfCheetah-v2', 'InvertedPendulum-v2'
-create_environment.name = 'InvertedPendulum-v2'
+create_environment.name = 'CartPole-v0'
 create_environment.gym_make_kwargs = {}
-create_environment.save_videos = False
+create_environment.save_videos = True
 create_environment.wrapper_kwargs = {
     "directory": "./videos/",
     "force": True,
@@ -47,7 +53,7 @@ setup_logger.notes = "This is the refactor test run"
 setup_logger.project = "vanilla-policy-optimization"
 setup_logger.tags = ['tag1', 'tag2']
 setup_logger.save_code = True
-setup_logger.monitor_gym = True
+setup_logger.monitor_gym = False
 
 
 # -----------------------------------------------------------------------------
