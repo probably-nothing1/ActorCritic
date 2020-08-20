@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import wandb
 
-from utils.utils import get_video_filepath
+from utils.env_utils import get_video_filepath
 
 
 def record_evaluation_video(actor, env):
