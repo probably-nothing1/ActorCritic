@@ -1,0 +1,62 @@
+# -----------------------------------------------------------------------------
+# ----------------------------         TRAINING          ----------------------
+# -----------------------------------------------------------------------------
+main.epochs = 100
+main.solved_score = 190
+main.lr = 1e-4
+main.weight_decay = 0 #1e-4
+main.device = 'cuda:0'
+train_critic.num_train_loop_iterations = 80
+
+# -----------------------------------------------------------------------------
+# ----------------------------   TRAJECTORY COLLECTION   ----------------------
+# -----------------------------------------------------------------------------
+collect_trajectories.min_num_of_steps_in_epoch = 1000
+Trajectory.gamma = 0.99
+# choice: advantage_GAE, total_reward, reward_following, td_residual
+Trajectory.theta_function = @advantage_GAE
+advantage_GAE.GAE_lambda = 0.97
+
+
+# -----------------------------------------------------------------------------
+# ---------------------------------   EVALUATE   ------------------------------
+# -----------------------------------------------------------------------------
+main.record_eval_video_rate = 5
+evaluate.runs = 20
+
+
+# -----------------------------------------------------------------------------
+# ----------------------------        MODELS         --------------------------
+# -----------------------------------------------------------------------------
+ActorCritic.hidden_sizes = (128, 128, 128)
+
+
+# -----------------------------------------------------------------------------
+# ------------------------------    ENVIRONMENT    ----------------------------
+# -----------------------------------------------------------------------------
+# choice: 'CartPole-v0', 'HalfCheetah-v2', 'InvertedPendulum-v2', 'PongNoFrameskip-v4'
+create_environment.name = 'CartPole-v0'
+create_environment.gym_make_kwargs = {}
+create_environment.save_videos = True
+create_environment.wrapper_kwargs = {
+    "directory": "./videos/",
+    "force": True,
+    "write_upon_reset": True
+}
+
+
+# -----------------------------------------------------------------------------
+# ----------------------------        LOGGING        --------------------------
+# -----------------------------------------------------------------------------
+setup_logger.name = "dev-run-gamma-0.9"
+setup_logger.notes = "This is the refactor test run"
+setup_logger.project = "actor-critic"
+setup_logger.tags = ['tag1', 'tag2']
+setup_logger.save_code = True
+setup_logger.monitor_gym = False
+
+
+# -----------------------------------------------------------------------------
+# ----------------------------         UTILS         --------------------------
+# -----------------------------------------------------------------------------
+set_seed.seed = 1337

@@ -37,19 +37,20 @@ class Trajectory:
     def __init__(self, gamma, theta_function):
         self.gamma = gamma
         self.length = 0
-        self.observations = np.zeros(1000)
-        self.values = np.zeros(1000)
-        self.actions = np.zeros(1000)
-        self.rewards = np.zeros(1000)
-        self.discounted_rewards = np.zeros(1000)
+        self.observations = np.zeros(10000)
+        self.values = np.zeros(10000)
+        self.actions = np.zeros(10000)
+        self.rewards = np.zeros(10000)
+        self.discounted_rewards = np.zeros(10000)
         self.theta_function = theta_function
         self.finished = False
 
     def append(self, observation, value, action, reward):
         assert not self.finished
         if self.length == 0:
-            self.observations = np.zeros((1000, *observation.shape))
-            self.actions = np.zeros((1000, *action.shape))
+            self.observations = np.zeros((10000, *observation.shape))
+            if not isinstance(action, int):
+                self.actions = np.zeros((10000, *action.shape))
 
         self.observations[self.length] = observation
         self.values[self.length] = value

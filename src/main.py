@@ -1,3 +1,5 @@
+import sys
+
 import gin
 import torch
 import wandb
@@ -5,25 +7,23 @@ from torch.optim import Adam
 
 from data.ExperienceBuffer import ExperienceBuffer
 from evaluation import evaluate, record_evaluation_video
-from models.Actor import create_actor, train_actor
-from models.Critic import Critic, train_critic
-from utils.utils import create_environment, dict_iter2tensor, set_seed, setup_logger
+from models.ActorCritic import ActorCritic, train_actor, train_critic
+from utils.env_utils import create_environment
+from utils.utils import dict_iter2tensor, set_seed, setup_logger
 
 
 @gin.configurable
-def collect_trajectories(actor, critic, env, experience_buffer, min_num_of_steps_in_epoch):
+def collect_trajectories(actor_critic, env, experience_buffer, min_num_of_steps_in_epoch, device="cpu"):
     steps_collected = 0
     while steps_collected < min_num_of_steps_in_epoch:
         o = env.reset()
         total_reward = 0
         done = False
         while not done:
-            o = torch.as_tensor(o, dtype=torch.float32)
-            with torch.no_grad():
-                a, _ = actor(o)
-                v = critic(o)
+            o_tensor = torch.as_tensor(o, dtype=torch.float32).unsqueeze(0).to(device)
 
-            a, v = a.numpy(), v.item()
+            a, v, _ = actor_critic(o_tensor)
+
             next_o, reward, done, info = env.step(a)
             total_reward += reward
 
@@ -38,51 +38,52 @@ def collect_trajectories(actor, critic, env, experience_buffer, min_num_of_steps
 
 
 @gin.configurable
-def main(actor_lr, critic_lr, weight_decay, epochs, record_eval_video_rate):
-    setup_logger()
-    set_seed()
-
-    # create env
+def main(lr, weight_decay, epochs, record_eval_video_rate, device, solved_score):
     env = create_environment()
-    observation_dim = env.observation_space.shape[0]
 
-    # create models
-    actor = create_actor(env.observation_space, env.action_space)
-    critic = Critic(observation_dim)
+    setup_logger()
+    set_seed(env)
 
-    # create exp buffer
+    actor_critic = ActorCritic(env).to(device)
+    print(actor_critic)
+
     experience_buffer = ExperienceBuffer()
 
-    # create optimizers
-    actor_optimizer = Adam(actor.parameters(), lr=actor_lr, weight_decay=weight_decay)
-    critic_optimizer = Adam(critic.parameters(), lr=critic_lr, weight_decay=weight_decay)
+    optimizer = Adam(actor_critic.parameters(), lr=lr, weight_decay=weight_decay)
+    # actor_optimizer = Adam(actor_critic.actor.parameters(), lr=actor_lr, weight_decay=weight_decay)
+    # critic_optimizer = Adam(actor_critic.critic.parameters(), lr=critic_lr, weight_decay=weight_decay)
 
+    ma_reward = 0
     for epoch in range(epochs):
-        collect_trajectories(actor, critic, env, experience_buffer)
+        collect_trajectories(actor_critic, env, experience_buffer, device=device)
 
         data = experience_buffer.get_data()
-        data = dict_iter2tensor(data)
-        actor_loss, entropy = train_actor(actor, data, actor_optimizer)
-        critic_loss = train_critic(critic, data, critic_optimizer)
+        data = dict_iter2tensor(data, device=device)
+        actor_loss, entropy = train_actor(actor_critic, data, optimizer)
+        critic_loss = train_critic(actor_critic, data, optimizer)
         experience_buffer.clear()
 
-        test_mean_reward, test_max_reward, test_min_reward = evaluate(actor, env)
+        test_mean_reward = evaluate(actor_critic, env, device)
+        ma_reward = 0.9 * ma_reward + 0.1 * test_mean_reward
+        if ma_reward >= solved_score:
+            break
 
         if epoch % record_eval_video_rate == 0:
-            record_evaluation_video(actor, env)
+            record_evaluation_video(actor_critic, env, device)
 
         wandb.log(
             {
+                "Test Reward Moving Average": ma_reward,
+                "Epoch": epoch,
                 "Actor Loss": actor_loss,
                 "Critic Loss": critic_loss,
                 "Entropy": entropy,
-                "Test Mean Reward": test_mean_reward,
-                "Test Max Reward": test_max_reward,
-                "Test Min Reward": test_min_reward,
+                "Test Average Reward": test_mean_reward,
             }
         )
 
 
 if __name__ == "__main__":
-    gin.parse_config_file("experiments/dev_config.gin")
+    experiment_file = sys.argv[1]
+    gin.parse_config_file(experiment_file)
     main()

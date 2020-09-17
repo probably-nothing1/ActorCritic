@@ -1,10 +1,10 @@
 # -----------------------------------------------------------------------------
 # ----------------------------         TRAINING          ----------------------
 # -----------------------------------------------------------------------------
-main.epochs = 100
-main.actor_lr = 3e-4
-main.critic_lr = 1e-3
+main.epochs = 10000
+main.lr = 1e-3
 main.weight_decay = 10e-4
+main.device = 'cuda:0'
 train_critic.num_train_loop_iterations = 80
 
 # -----------------------------------------------------------------------------
@@ -27,15 +27,20 @@ evaluate.runs = 20
 # -----------------------------------------------------------------------------
 # ----------------------------        MODELS         --------------------------
 # -----------------------------------------------------------------------------
-Critic.hidden_sizes = (128, 128, 128)
-create_actor.hidden_sizes = (128, 128, 128)
+AtariActorCritic.conv_sizes = [
+    [-1, 32, 8, 4],
+    [32, 64, 4, 2],
+    [64, 64, 3, 1]
+]
+AtariActorCritic.use_bn = True
+AtariActorCritic.fc_sizes = (128, 128, 128)
 
 
 # -----------------------------------------------------------------------------
 # ------------------------------    ENVIRONMENT    ----------------------------
 # -----------------------------------------------------------------------------
-# choice: 'CartPole-v0', 'HalfCheetah-v2', 'InvertedPendulum-v2'
-create_environment.name = 'CartPole-v0'
+# choice: 'CartPole-v0', 'HalfCheetah-v2', 'InvertedPendulum-v2', 'PongNoFrameskip-v4'
+create_environment.name = 'PongNoFrameskip-v4'
 create_environment.gym_make_kwargs = {}
 create_environment.save_videos = True
 create_environment.wrapper_kwargs = {
@@ -50,7 +55,7 @@ create_environment.wrapper_kwargs = {
 # -----------------------------------------------------------------------------
 setup_logger.name = "dev-run-gamma-0.9"
 setup_logger.notes = "This is the refactor test run"
-setup_logger.project = "vanilla-policy-optimization"
+setup_logger.project = "actor-critic"
 setup_logger.tags = ['tag1', 'tag2']
 setup_logger.save_code = True
 setup_logger.monitor_gym = False
