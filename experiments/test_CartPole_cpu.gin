@@ -5,7 +5,7 @@ main.epochs = 100
 main.solved_score = 190
 main.lr = 1e-4
 main.weight_decay = 0 #1e-4
-main.device = 'cuda:0'
+main.device = 'cpu'
 train_critic.num_train_loop_iterations = 80
 
 # -----------------------------------------------------------------------------
@@ -48,10 +48,10 @@ create_environment.wrapper_kwargs = {
 # -----------------------------------------------------------------------------
 # ----------------------------        LOGGING        --------------------------
 # -----------------------------------------------------------------------------
-setup_logger.name = "dev-run-gamma-0.9"
-setup_logger.notes = "This is the refactor test run"
+setup_logger.name = "test-CartPole"
+setup_logger.notes = ""
 setup_logger.project = "actor-critic"
-setup_logger.tags = ['tag1', 'tag2']
+setup_logger.tags = ['CartPole']
 setup_logger.save_code = True
 setup_logger.monitor_gym = False
 
