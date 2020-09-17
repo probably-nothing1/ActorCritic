@@ -108,6 +108,19 @@ class EvalMonitor(wrappers.Monitor):
         return self.video_callable(self.mode)
 
 
+class PongRewardModifier(gym.Wrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
+    def step(self, action):
+        observation, reward, done, info = self.env.step(action)
+        done = reward != 0
+        return observation, reward, done, info
+
+    def reset(self):
+        return self.env.reset()
+
+
 class CartPoleRewardModifier(gym.Wrapper):
     def __init__(self, env):
         super().__init__(env)
@@ -152,6 +165,7 @@ def create_environment(name, gym_make_kwargs=dict(), save_videos=False, wrapper_
         env = ScaleImage(env)
         env = ImageToPytorchChannelOrdering(env)
         env = FrameBuffer(env, k_frames=4)
+        env = PongRewardModifier(env)
     if save_videos:
         env = EvalMonitor(env, video_callable=lambda mode: mode == "evaluation", **wrapper_kwargs)
     return env
