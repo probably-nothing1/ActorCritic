@@ -41,6 +41,14 @@ def train_critic(actor_critic, data, optimizer, num_train_loop_iterations=80):
     return loss.item()
 
 
+def create_actor_critic(env):
+    if env.unwrapped.spec.id.startswith("Pong"):
+        return AtariActorCritic(env)
+    elif env.unwrapped.spec.id.startswith("CartPole"):
+        return ActorCritic(env)
+    raise ValueError(f"Unrecognized Gym Environment {env.unwrapped.spec.id}")
+
+
 @gin.configurable
 class AtariActorCritic(nn.Module):
     def __init__(self, env, conv_sizes, fc_sizes, use_bn=False):

@@ -7,7 +7,7 @@ from torch.optim import Adam
 
 from data.ExperienceBuffer import ExperienceBuffer
 from evaluation import evaluate, record_evaluation_video
-from models.ActorCritic import ActorCritic, train_actor, train_critic
+from models.ActorCritic import create_actor_critic, train_actor, train_critic
 from utils.env_utils import create_environment
 from utils.utils import dict_iter2tensor, set_seed, setup_logger
 
@@ -44,14 +44,12 @@ def main(lr, weight_decay, epochs, record_eval_video_rate, device, solved_score)
     setup_logger()
     set_seed(env)
 
-    actor_critic = ActorCritic(env).to(device)
+    actor_critic = create_actor_critic(env).to(device)
     print(actor_critic)
 
     experience_buffer = ExperienceBuffer()
 
     optimizer = Adam(actor_critic.parameters(), lr=lr, weight_decay=weight_decay)
-    # actor_optimizer = Adam(actor_critic.actor.parameters(), lr=actor_lr, weight_decay=weight_decay)
-    # critic_optimizer = Adam(actor_critic.critic.parameters(), lr=critic_lr, weight_decay=weight_decay)
 
     ma_reward = 0
     for epoch in range(epochs):
@@ -64,7 +62,7 @@ def main(lr, weight_decay, epochs, record_eval_video_rate, device, solved_score)
         experience_buffer.clear()
 
         test_mean_reward = evaluate(actor_critic, env, device)
-        ma_reward = 0.9 * ma_reward + 0.1 * test_mean_reward
+        ma_reward = 0.99 * ma_reward + 0.01 * test_mean_reward
         if ma_reward >= solved_score:
             break
 
