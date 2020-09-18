@@ -155,17 +155,29 @@ class CartPoleRewardModifier(gym.Wrapper):
 @gin.configurable
 def create_environment(name, gym_make_kwargs=dict(), save_videos=False, wrapper_kwargs=dict()):
     env = gym.make(name, **gym_make_kwargs)
-    if name in ["CartPole-v0"]:
-        pass
-        # env = wrappers.TimeLimit(env.unwrapped, max_episode_steps=1000)
-        # env = CartPoleRewardModifier(env)
-    if name.startswith("Pong"):
-        env = MaxAndSkipEnv(env)
-        env = ProcessFrame(env)
-        env = ScaleImage(env)
-        env = ImageToPytorchChannelOrdering(env)
-        env = FrameBuffer(env, k_frames=4)
-        env = PongRewardModifier(env)
+    if name.startswith("CartPole"):
+        env = wrap_cart_pole_environment(env)
+    elif name.startswith("Pong"):
+        env = wrap_pong_environment(env)
+    else:
+        raise NotImplementedError(f"{name} environment is not currently supported.")
+
     if save_videos:
         env = EvalMonitor(env, video_callable=lambda mode: mode == "evaluation", **wrapper_kwargs)
+    return env
+
+
+def wrap_cart_pole_environment(env):
+    # env = wrappers.TimeLimit(env.unwrapped, max_episode_steps=1000)
+    # env = CartPoleRewardModifier(env)
+    return env
+
+
+def wrap_pong_environment(env):
+    env = MaxAndSkipEnv(env)
+    env = ProcessFrame(env)
+    env = ScaleImage(env)
+    env = ImageToPytorchChannelOrdering(env)
+    env = FrameBuffer(env, k_frames=4)
+    env = PongRewardModifier(env)
     return env
