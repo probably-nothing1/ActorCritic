@@ -37,6 +37,22 @@ class FrameBuffer(gym.ObservationWrapper):
         return self.buffer
 
 
+class BlackAndWhiteImage(gym.ObservationWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+        self.observation_space = gym.spaces.Box(low=-1.0, high=1.0, shape=(1, 80, 80), dtype=np.float32)
+        self.previous_image = np.zeros((84, 84))
+
+    def observation(self, img):
+        img = img[34:194]  # crop
+        img = img[::2, ::2, 0]  # downsample by factor of 2
+        img[img == 144] = 0  # erase background (background type 1)
+        img[img == 109] = 0  # erase background (background type 2)
+        img[img != 0] = 1  # everything else (paddles, ball) just set to 1
+        img = img.astype(np.float32)
+        return img[None]  # reshape to (1, 80, 80)
+
+
 class ProcessFrame(gym.ObservationWrapper):
     def __init__(self, env):
         super().__init__(env)
@@ -174,10 +190,11 @@ def wrap_cart_pole_environment(env):
 
 
 def wrap_pong_environment(env):
-    env = MaxAndSkipEnv(env)
-    env = ProcessFrame(env)
-    env = ScaleImage(env)
-    env = ImageToPytorchChannelOrdering(env)
+    env = MaxAndSkipEnv(env, skip_frames=2)
+    # env = ProcessFrame(env)
+    # env = ScaleImage(env)
+    # env = ImageToPytorchChannelOrdering(env)
+    env = BlackAndWhiteImage(env)
     env = FrameBuffer(env, k_frames=4)
     env = PongRewardModifier(env)
     return env
